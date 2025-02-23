@@ -113,6 +113,7 @@ def check_speed():
     plt.title("Library vs Execution time")
     plt.xlabel("Execution time (microseconds)")
     plt.ylabel("Library")
+    plt.savefig("outputs/serde_speed.png")
     plt.show()
 
 
