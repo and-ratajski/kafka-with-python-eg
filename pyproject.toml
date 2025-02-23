@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kafka-with-python-eg"
+version = "0.1.0"
+description = "Examples of Kafka usage with Python"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.9.0",
+    "confluent_kafka>=2.4.0",
+    "kafka-mocha>=1.0.0b1",
+    "httpx>=0.28.0",
+    "attrs>=25.0.0",
+    "cachetools>=5.5.0",
+    "fastavro>=1.10.0",
+    "matplotlib>=3.0.0",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Stream Processing/Big Data",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "pytest-env>=1.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+]
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+include = '\.pyw?$'
+exclude = 'lib/acegen/acegen_py/const.py'
+
+[tool.isort]
+profile = "black"
+line_length = 120
+multi_line_output = 3
+#include_trailing_comma = true
+#force_grid_wrap = 0
+#use_parentheses = true
+#ensure_newline_before_comments = true
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = ["E203", "E701"]
