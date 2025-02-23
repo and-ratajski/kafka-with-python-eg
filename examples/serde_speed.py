@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import json
 import os
 import time
@@ -10,9 +11,11 @@ from confluent_kafka.serialization import SerializationContext, MessageField
 
 from kafka_mocha.schema_registry.mock_schema_registry_client import MockSchemaRegistryClient
 
+from examples.models.as_vanilla_python import UserRegistered as UserRegistered__vanilla
 from examples.models.as_attrs import UserRegistered as UserRegistered__attrs
 from examples.models.as_dataclass import UserRegistered as UserRegistered__dataclass
 from examples.models.as_pydantic import UserRegistered as UserRegistered__pydantic
+from examples.models.as_vanilla_python import EventEnvelope as EventEnvelope__vanilla
 from examples.models.as_attrs import EventEnvelope as EventEnvelope__attrs
 from examples.models.as_dataclass import EventEnvelope as EventEnvelope__dataclass
 from examples.models.as_pydantic import EventEnvelope as EventEnvelope__pydantic
@@ -51,6 +54,9 @@ def check_speed():
     )
 
     user_id = uuid4()
+    event_van = UserRegistered__vanilla(
+        user_id, "John", "Attrivani", True, "LITE", datetime.now(), 7.2, EventEnvelope__vanilla()
+    )
     event_at = UserRegistered__attrs(
         user_id, "John", "Attrivani", True, "LITE", datetime.now(), 7.2, EventEnvelope__attrs()
     )
@@ -73,12 +79,23 @@ def check_speed():
 
     start_time = time.time()
     for _ in range(TEST_RUNS):
-        output_event = serde_event(avro_serializer, avro_deserializer, UserRegistered__attrs, event_at)
+        output_event = serde_event(avro_serializer, avro_deserializer, UserRegistered__vanilla, event_van)
     elapsed_time = time.time() - start_time
     print("\n")
+    print(f"[VANILLA] Execution time (total): {elapsed_time:.5f} seconds")
+    print(f"[VANILLA] Execution time (per message): {(van_time := (elapsed_time / TEST_RUNS) * 1e6):.3f} microseconds")
+    print(f"[VANILLA] Maximal throughput: {(van_msgs := int(1 / (elapsed_time / TEST_RUNS)))} messages/sec\n")
+
+    # print(event_van)
+    # print(str(output_event) + "\n\n")
+
+    start_time = time.time()
+    for _ in range(TEST_RUNS):
+        output_event = serde_event(avro_serializer, avro_deserializer, UserRegistered__attrs, event_at)
+    elapsed_time = time.time() - start_time
     print(f"[ATTRS] Execution time (total): {elapsed_time:.5f} seconds")
     print(f"[ATTRS] Execution time (per message): {(attrs_time := (elapsed_time / TEST_RUNS) * 1e6):.3f} microseconds")
-    print(f"[ATTRS] Maximal throughput: {int(1 / (elapsed_time / TEST_RUNS))} messages/sec\n")
+    print(f"[ATTRS] Maximal throughput: {(attrs_msgs := int(1 / (elapsed_time / TEST_RUNS)))} messages/sec\n")
 
     # print(event_at)
     # print(str(output_event) + "\n\n")
@@ -89,7 +106,7 @@ def check_speed():
     elapsed_time = time.time() - start_time
     print(f"[DATACLASS] Execution time: {elapsed_time:.5f} seconds")
     print(f"[DATACLASS] Execution time (per message): {(dc_time := (elapsed_time / TEST_RUNS) * 1e6):.3f} microseconds")
-    print(f"[DATACLASS] Maximal throughput: {int(1 / (elapsed_time / TEST_RUNS))} messages/sec\n")
+    print(f"[DATACLASS] Maximal throughput: {(dc_msgs := int(1 / (elapsed_time / TEST_RUNS)))} messages/sec\n")
 
     # print(event_dc)
     # print(str(output_event) + "\n\n")
@@ -100,19 +117,38 @@ def check_speed():
     elapsed_time = time.time() - start_time
     print(f"[PYDANTIC] Execution time: {elapsed_time:.5f} seconds")
     print(f"[PYDANTIC] Execution time (per message): {(pd_time := (elapsed_time / TEST_RUNS) * 1e6):.3f} microseconds")
-    print(f"[PYDANTIC] Maximal throughput: {int(1 / (elapsed_time / TEST_RUNS))} messages/sec\n")
+    print(f"[PYDANTIC] Maximal throughput: {(pd_msgs := int(1 / (elapsed_time / TEST_RUNS)))} messages/sec\n")
 
     # print(event_pd)
     # print(str(output_event) + "\n\n")
 
-    library = ["attrs", "dataclass", "pydantic"]
-    times = [attrs_time, dc_time, pd_time]
+    libraries = ["vanilla python", "attrs", "dataclass", "pydantic"]
+    times = [van_time, attrs_time, dc_time, pd_time]
+    messages = [van_msgs, attrs_msgs, dc_msgs, pd_msgs]
 
-    plt.barh(library, times)
+    # Calculate y positions for bars
+    y_pos = np.arange(len(libraries))
+    width = 0.35  # Width of bars
+    y1 = y_pos - width / 2  # First set of bars
+    y2 = y_pos + width / 2  # Second set of bars
+    fig, ax1 = plt.subplots()
 
-    plt.title("Library vs Execution time")
-    plt.xlabel("Execution time (microseconds)")
-    plt.ylabel("Library")
+    ax1.set_xlabel("Serde time (microseconds)")
+    ax1.set_ylabel("Library")
+    ax1.barh(y1, times, height=0.9*width, color='blue', label='Time')
+    ax1.set_yticks(y_pos)
+    ax1.set_yticklabels(libraries)
+
+    ax2 = ax1.twiny()
+    ax2.set_xlabel("Maximal throughput (messages/sec)")
+    ax2.barh(y2, messages, height=0.9*width, color='red', alpha=0.5, label='Throughput')
+
+    plt.title("Library Performance Comparison")
+    ax2.legend(loc='center left', bbox_to_anchor=(1.0, 0.3))
+    ax1.legend(loc='center left', bbox_to_anchor=(1.0, 0.5))
+
+    fig.tight_layout(rect=[0, 0, 0.9, 1])
+    fig.tight_layout()
     plt.savefig("outputs/serde_speed.png")
     plt.show()
 
