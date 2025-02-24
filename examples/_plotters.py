@@ -22,7 +22,8 @@ def plot_serde_speed_chart(libraries: list[str], times: list[float], messages: l
 
     ax2 = ax1.twiny()
     ax2.set_xlabel("Maximal throughput (messages/sec)")
-    ax2.barh(y2, messages, height=0.9 * width, color="red", alpha=0.5, tick_label="sci", label="Throughput")
+    ax2.barh(y2, messages, height=0.9 * width, color="red", alpha=0.5, label="Throughput")
+    ax2.set_xticks(np.arange(start = 0, stop=max(messages) + 5_000, step=10_000))
 
     plt.title("Library Performance Comparison")
     ax2.legend(loc="center left", bbox_to_anchor=(1.0, 0.3))
