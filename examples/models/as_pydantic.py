@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Annotated
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, AfterValidator, PlainSerializer
+from pydantic import BaseModel, Field, AfterValidator, PlainSerializer, ConfigDict
 
 
 class SubscriptionType(str, Enum):
@@ -33,6 +33,8 @@ class EventEnvelope(BaseModel):
     app_name: str = Field(default="kafka_mocha_on_pydantic")
     app_version: str = Field(default="1.0.0")
 
+    model_config = ConfigDict(cache_strings=False)
+
 
 class UserRegistered(BaseModel):
     user_id: EnsuredUUID
@@ -43,6 +45,8 @@ class UserRegistered(BaseModel):
     registration_timestamp: EnsuredDatetime
     score: float
     envelope: EventEnvelope
+
+    model_config = ConfigDict(cache_strings=False)
 
     def to_dict(self):
         return self.model_dump()
