@@ -39,7 +39,7 @@
             "type": "double"
         },
         {
-            "name": "envelope",
+            "name": "_envelope",
             "type": {
                 "type": "record",
                 "name": "EventEnvelope",
@@ -48,6 +48,11 @@
                         "name": "envelope_id",
                         "type": "string",
                         "logicalType": "uuid"
+                    },                                        {
+                        "name": "parent_id",
+                        "type": ["null", "string"],
+                        "logicalType": "uuid",
+                        "default": null
                     },
                     {
                         "name": "event_timestamp",

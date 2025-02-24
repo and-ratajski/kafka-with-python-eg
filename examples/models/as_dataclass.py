@@ -1,6 +1,7 @@
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 from uuid import UUID, uuid4
 
 
@@ -28,12 +29,14 @@ class SubscriptionType(str, Enum):
 @dataclass(slots=True)
 class EventEnvelope:
     envelope_id: UUID = field(default_factory=uuid4)
+    parent_id: Optional[UUID] = field(default=None)
     event_timestamp: datetime = field(default_factory=datetime.now)
     app_name: str = field(default="kafka_mocha_on_dataclass")
     app_version: str = field(default="1.0.0")
 
     def __post_init__(self):
         self.envelope_id = UUID(self.envelope_id) if isinstance(self.envelope_id, str) else self.envelope_id
+        self.parent_id = UUID(self.parent_id) if isinstance(self.parent_id, str) else self.parent_id
         if isinstance(self.event_timestamp, int):
             self.event_timestamp = datetime.fromtimestamp(self.event_timestamp / 1000)
 
@@ -47,7 +50,15 @@ class UserRegistered:
     subscription_type: SubscriptionType
     registration_timestamp: datetime
     score: float
-    envelope: EventEnvelope
+    _envelope: EventEnvelope
+
+    @property
+    def envelope(self) -> EventEnvelope:
+        return self._envelope
+
+    @envelope.setter
+    def envelope(self, value: EventEnvelope | dict) -> None:
+        self._envelope = EventEnvelope(**value) if isinstance(value, dict) else value
 
     def __post_init__(self):
         self.user_id = UUID(self.user_id) if isinstance(self.user_id, str) else self.user_id
@@ -55,8 +66,8 @@ class UserRegistered:
             self.subscription_type = SubscriptionType(self.subscription_type)
         if isinstance(self.registration_timestamp, int):
             self.registration_timestamp = datetime.fromtimestamp(self.registration_timestamp / 1000)
-        if isinstance(self.envelope, dict):
-            self.envelope = EventEnvelope(**self.envelope)
+        if isinstance(self._envelope, dict):
+            self.envelope = EventEnvelope(**self._envelope)
 
     def to_dict(self):
         return asdict(self, dict_factory=dict_factory)

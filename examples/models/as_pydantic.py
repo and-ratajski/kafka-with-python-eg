@@ -1,9 +1,9 @@
 from datetime import datetime
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Optional
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, AfterValidator, PlainSerializer, ConfigDict
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, PlainSerializer
 
 
 class SubscriptionType(str, Enum):
@@ -29,6 +29,7 @@ EnsuredSubscriptionType = Annotated[
 
 class EventEnvelope(BaseModel):
     envelope_id: EnsuredUUID = Field(default_factory=uuid4)
+    parent_id: Optional[EnsuredUUID] = Field(None)
     event_timestamp: EnsuredDatetime = Field(default_factory=datetime.now)
     app_name: str = Field(default="kafka_mocha_on_pydantic")
     app_version: str = Field(default="1.0.0")
@@ -44,9 +45,9 @@ class UserRegistered(BaseModel):
     subscription_type: EnsuredSubscriptionType
     registration_timestamp: EnsuredDatetime
     score: float
-    envelope: EventEnvelope
+    envelope: EventEnvelope = Field(default_factory=EventEnvelope, alias="_envelope")
 
     model_config = ConfigDict(cache_strings=False)
 
     def to_dict(self):
-        return self.model_dump()
+        return self.model_dump(by_alias=True)

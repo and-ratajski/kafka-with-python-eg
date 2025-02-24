@@ -1,7 +1,9 @@
 from datetime import datetime
 from enum import Enum
 from uuid import UUID, uuid4
-from attrs import define, field, asdict
+
+from attrs import asdict, define, field
+from typing_extensions import Optional
 
 
 def serialize_value(_, __, value):
@@ -42,6 +44,7 @@ class SubscriptionType(str, Enum):
 @define
 class EventEnvelope:
     envelope_id: UUID = field(factory=uuid4, converter=Converters.to_uuid)
+    parent_id: Optional[UUID] = field(default=None, converter=Converters.to_uuid)
     event_timestamp: datetime = field(factory=datetime.now, converter=Converters.to_ts)
     app_name: str = field(default="kafka_mocha_on_attrs")
     app_version: str = field(default="1.0.0")
@@ -56,7 +59,15 @@ class UserRegistered:
     subscription_type: SubscriptionType = field(converter=Converters.to_subscription)
     registration_timestamp: datetime = field(converter=Converters.to_ts)
     score: float
-    envelope: EventEnvelope = field(converter=Converters.to_envelope)
+    _envelope: EventEnvelope = field(alias="_envelope", converter=Converters.to_envelope)
+
+    @property
+    def envelope(self) -> EventEnvelope:
+        return self._envelope
+
+    @envelope.setter
+    def envelope(self, value: EventEnvelope | dict) -> None:
+        self._envelope = EventEnvelope(**value) if isinstance(value, dict) else value
 
     def to_dict(self):
         return asdict(self, value_serializer=serialize_value)
